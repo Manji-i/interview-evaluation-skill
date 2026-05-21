@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "updated_at": null,
+  "rating_scale": {
+    "NH": "clearly below hiring bar",
+    "H-": "near bar but materially risky",
+    "H": "meets hiring bar",
+    "H+": "clearly above bar",
+    "MH": "exceptional strong hire signal"
+  },
+  "categories": {
+    "professional_ability": {
+      "display_name": "专业能力",
+      "dimensions": {}
+    },
+    "soft_quality": {
+      "display_name": "软素质",
+      "dimensions": {}
+    }
+  }
+}
