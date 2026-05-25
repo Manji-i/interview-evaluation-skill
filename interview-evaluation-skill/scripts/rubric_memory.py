@@ -59,6 +59,7 @@ def default_memory():
             "professional_ability": {"display_name": "专业能力", "dimensions": {}},
             "soft_quality": {"display_name": "软素质", "dimensions": {}},
         },
+        "templates": {},
     }
 
 
@@ -94,6 +95,7 @@ def load_memory():
             },
         )
         data["categories"][category].setdefault("dimensions", {})
+    data.setdefault("templates", {})
     return data
 
 
@@ -119,6 +121,26 @@ def parse_levels(raw):
     return {rating: str(levels.get(rating, "")) for rating in RATINGS}
 
 
+def parse_dimensions(raw):
+    if not raw:
+        raise SystemExit("--dimensions-json is required")
+    dimensions = json.loads(raw)
+    if not isinstance(dimensions, list):
+        raise SystemExit("--dimensions-json must be a JSON array")
+    normalized = []
+    for item in dimensions:
+        if not isinstance(item, dict):
+            raise SystemExit("each dimension must be a JSON object")
+        category = item.get("category")
+        name = item.get("name")
+        if category not in CATEGORIES:
+            raise SystemExit(f"dimension category must be one of: {', '.join(CATEGORIES)}")
+        if not name:
+            raise SystemExit("dimension name is required")
+        normalized.append({"category": category, "name": str(name)})
+    return normalized
+
+
 def find_dimension(dimensions, name):
     target = slugify(name)
     if target in dimensions:
@@ -131,8 +153,47 @@ def find_dimension(dimensions, name):
     return target
 
 
+def find_template(templates, name):
+    target = slugify(name)
+    if target in templates:
+        return target
+    lower = name.lower()
+    for key, value in templates.items():
+        names = [value.get("name", ""), *value.get("aliases", [])]
+        if lower in [item.lower() for item in names]:
+            return key
+    return target
+
+
 def cmd_show(_args):
     print(json.dumps(load_memory(), ensure_ascii=False, indent=2))
+
+
+def cmd_list_templates(_args):
+    data = load_memory()
+    templates = data.get("templates", {})
+    result = []
+    for key, value in templates.items():
+        result.append(
+            {
+                "key": key,
+                "name": value.get("name", key),
+                "description": value.get("description", ""),
+                "role": value.get("role", ""),
+                "dimensions": value.get("dimensions", []),
+                "updated_at": value.get("updated_at"),
+            }
+        )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def cmd_show_template(args):
+    data = load_memory()
+    templates = data.get("templates", {})
+    key = find_template(templates, args.name)
+    if key not in templates:
+        raise SystemExit(f"template not found: {args.name}")
+    print(json.dumps(templates[key], ensure_ascii=False, indent=2))
 
 
 def cmd_upsert_dimension(args):
@@ -155,6 +216,28 @@ def cmd_upsert_dimension(args):
         }
         save_memory(data)
     print(f"upserted {args.category}.{key}")
+
+
+def cmd_upsert_template(args):
+    dimensions = parse_dimensions(args.dimensions_json)
+    with memory_lock():
+        data = load_memory()
+        templates = data.setdefault("templates", {})
+        key = find_template(templates, args.name)
+        existing = templates.get(key, {})
+        aliases = [item.strip() for item in (args.aliases or "").split(",") if item.strip()]
+        timestamp = now()
+        templates[key] = {
+            "name": args.name,
+            "aliases": aliases or existing.get("aliases", []),
+            "description": args.description or existing.get("description", ""),
+            "role": args.role or existing.get("role", ""),
+            "dimensions": dimensions,
+            "created_at": existing.get("created_at") or timestamp,
+            "updated_at": timestamp,
+        }
+        save_memory(data)
+    print(f"upserted template {key}")
 
 
 def cmd_add_calibration(args):
@@ -195,6 +278,13 @@ def build_parser():
     show = sub.add_parser("show", help="Print rubric memory JSON.")
     show.set_defaults(func=cmd_show)
 
+    list_templates = sub.add_parser("list-templates", help="Print saved interview dimension templates.")
+    list_templates.set_defaults(func=cmd_list_templates)
+
+    show_template = sub.add_parser("show-template", help="Print one interview dimension template.")
+    show_template.add_argument("--name", required=True)
+    show_template.set_defaults(func=cmd_show_template)
+
     upsert = sub.add_parser("upsert-dimension", help="Create or update a rubric dimension.")
     upsert.add_argument("--category", required=True)
     upsert.add_argument("--name", required=True)
@@ -202,6 +292,14 @@ def build_parser():
     upsert.add_argument("--aliases", default="")
     upsert.add_argument("--levels-json", default="")
     upsert.set_defaults(func=cmd_upsert_dimension)
+
+    template = sub.add_parser("upsert-template", help="Create or update an interview dimension template.")
+    template.add_argument("--name", required=True)
+    template.add_argument("--description", default="")
+    template.add_argument("--role", default="")
+    template.add_argument("--aliases", default="")
+    template.add_argument("--dimensions-json", required=True)
+    template.set_defaults(func=cmd_upsert_template)
 
     calibration = sub.add_parser("add-calibration", help="Record user feedback on scoring standards.")
     calibration.add_argument("--category", required=True)

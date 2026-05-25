@@ -1,6 +1,6 @@
 interface:
   display_name: "面试评价整理 Skill"
   short_description: "面试记录结构化与评分标准管理"
-  default_prompt: "使用 $interview-evaluation-skill 整理这份面试记录，确认考察维度，并按 NH/H-/H/H+/MH 输出结构化评价。"
+  default_prompt: "使用 $interview-evaluation-skill 整理这份面试记录；先让我选择历史维度模版、调整维度或新建模版，再按 NH/H-/H/H+/MH 输出结构化评价。"
 policy:
   allow_implicit_invocation: true

@@ -2,10 +2,13 @@
 
 面试评价整理 Skill，用于根据面试记录和用户指定考察维度，生成可直接上传招聘系统、供其他面试官阅读的结构化面试评价。
 
+当前版本：`v1.1`
+
 ## 能力
 
 - 支持飞书妙记、粘贴面试记录、PDF、Word、DOCX 等材料来源。
 - 支持自定义考察维度，维度分为专业能力和软素质。
+- 支持保存和复用维度模版；每次面试前先确认使用历史模版、调整模版或新建模版。
 - 使用 `NH / H- / H / H+ / MH` 评分。
 - 基于面试证据输出维度匹配度分析、主要风险和总体建议。
 - 支持沉淀维度评分标准，并根据用户反馈持续校准 rubric。
@@ -20,7 +23,8 @@ interview-evaluation-skill/
 ├── references/
 │   ├── output-schema.md
 │   ├── rubric-memory.md
-│   └── system-prompt.md
+│   ├── system-prompt.md
+│   └── version-history.md
 └── scripts/rubric_memory.py
 ```
 
@@ -52,7 +56,9 @@ export INTERVIEW_EVALUATION_RUBRICS_PATH="./.interview-evaluation/rubrics.json"
 
 ```bash
 python3 interview-evaluation-skill/scripts/rubric_memory.py show
+python3 interview-evaluation-skill/scripts/rubric_memory.py list-templates
 python3 interview-evaluation-skill/scripts/rubric_memory.py upsert-dimension --category professional_ability --name "业务理解" --definition "理解业务逻辑、关键指标和岗位问题本质的能力"
+python3 interview-evaluation-skill/scripts/rubric_memory.py upsert-template --name "产品经理一面" --role "产品经理" --description "产品经理一面常用维度" --dimensions-json '[{"category":"professional_ability","name":"业务理解"},{"category":"soft_quality","name":"学习能力"}]'
 python3 interview-evaluation-skill/scripts/rubric_memory.py add-calibration --category professional_ability --name "业务理解" --from-rating H+ --to-rating H --note "用户认为 H+ 偏高" --standard "H+ 需要有明确业务抽象、主动方案设计和可复核结果。"
 ```
 
@@ -69,3 +75,11 @@ interview-evaluation-skill.zip
 ```
 
 可直接分享给需要安装 Skill 的用户。
+
+## 版本记录
+
+完整版本记录见：
+
+```text
+interview-evaluation-skill/references/version-history.md
+```
